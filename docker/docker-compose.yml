@@ -1,0 +1,79 @@
+version: "3.9"
+
+volumes:
+  atlasdb-data:
+    name: webapi-symposium-atlasdb-data
+
+services:
+  broadsea-atlasdb:
+    image: ohdsi/broadsea-atlasdb:2.1.0
+    container_name: broadsea-atlasdb
+    platform: linux/amd64
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - atlasdb-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mypass}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  webapi:
+    image: ohdsi/webapi:latest
+    container_name: webapi-symposium-webapi
+    platform: linux/amd64
+    restart: unless-stopped
+    depends_on:
+      broadsea-atlasdb:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      DATASOURCE_DRIVERCLASSNAME: org.postgresql.Driver
+      DATASOURCE_URL: jdbc:postgresql://broadsea-atlasdb:5432/postgres
+      DATASOURCE_USERNAME: postgres
+      DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-mypass}
+      DATASOURCE_OHDSI_SCHEMA: webapi
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: webapi
+      SPRING_BATCH_REPOSITORY_TABLEPREFIX: webapi.BATCH_
+      FLYWAY_DATASOURCE_DRIVERCLASSNAME: org.postgresql.Driver
+      FLYWAY_DATASOURCE_URL: jdbc:postgresql://broadsea-atlasdb:5432/postgres
+      FLYWAY_DATASOURCE_USERNAME: postgres
+      FLYWAY_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-mypass}
+      FLYWAY_LOCATIONS: classpath:db/migration/postgresql
+      FLYWAY_PLACEHOLDERS_OHDSISCHEMA: webapi
+      FLYWAY_SCHEMAS: webapi
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+      FLYWAY_TABLE: schema_history
+      flyway_baselineVersionAsString: "2.2.5.20180212152023"
+      FLYWAY_BASELINEDESCRIPTION: Base Migration
+      SECURITY_CORS_ENABLED: "true"
+      SECURITY_ORIGIN: "*"
+      SECURITY_PROVIDER: "DisabledSecurity"
+      LOGGING_LEVEL_ROOT: info
+      LOGGING_LEVEL_ORG_OHDSI: info
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null http://localhost:8080/WebAPI/info || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 15
+      start_period: 180s
+
+  atlas:
+    image: ohdsi/atlas:latest
+    container_name: webapi-symposium-atlas
+    platform: linux/amd64
+    restart: unless-stopped
+    depends_on:
+      webapi:
+        condition: service_started
+    ports:
+      - "8081:8080"
+    environment:
+      WEBAPI_URL: http://webapi-symposium-webapi:8080/WebAPI/

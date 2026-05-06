@@ -1,0 +1,1 @@
+{"version":3,"file":"useConceptSets.d.ts","sourceRoot":"","sources":["../../../src/react/hooks/useConceptSets.ts"],"names":[],"mappings":"AAEA,OAAO,KAAK,EAAE,aAAa,EAAE,MAAM,qBAAqB,CAAC;AAEzD,MAAM,WAAW,oBAAoB;IACnC,IAAI,EAAE,aAAa,EAAE,CAAC;IACtB,SAAS,EAAE,OAAO,CAAC;IACnB,KAAK,EAAE,KAAK,GAAG,IAAI,CAAC;IACpB,OAAO,EAAE,MAAM,IAAI,CAAC;CACrB;AAED,wBAAgB,cAAc,IAAI,oBAAoB,CAkBrD"}

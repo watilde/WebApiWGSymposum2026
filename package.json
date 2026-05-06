@@ -1,0 +1,15 @@
+{
+  "name": "webapi-wg-symposium-2026",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "dev:reference": "npm run dev -w apps/reference-app",
+    "dev:starter": "npm run dev -w apps/starter-kit",
+    "build:sdk": "npm run build -w packages/webapi-sdk",
+    "build": "npm run build:sdk && npm run build --workspaces --if-present",
+    "docker:up": "docker compose -f docker/docker-compose.yml --env-file docker/.env up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down",
+    "docker:logs": "docker compose -f docker/docker-compose.yml logs -f webapi"
+  }
+}
