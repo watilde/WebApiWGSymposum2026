@@ -6,6 +6,8 @@
   "scripts": {
     "dev:reference": "npm run dev -w apps/reference-app",
     "dev:starter": "npm run dev -w apps/starter-kit",
+    "dev:example-react": "npm run dev -w apps/example-react",
+    "dev:example-vue": "npm run dev -w apps/example-vue",
     "build:sdk": "npm run build -w packages/webapi-sdk",
     "build": "npm run build:sdk && npm run build --workspaces --if-present",
     "docker:up": "docker compose -f docker/docker-compose.yml --env-file docker/.env up -d",

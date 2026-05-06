@@ -1,6 +1,6 @@
-# WebApi WG Symposum 2026
+# WebAPI WG Symposium 2026
 
-A monorepo for the OHDSI WebAPI Working Group Symposium 2026. It contains a TypeScript SDK for OHDSI WebAPI, a fully-featured reference application, and a minimal starter kit for attendees to build on top of.
+A monorepo for the OHDSI WebAPI Working Group Symposium 2026. It contains a TypeScript SDK for OHDSI WebAPI, React and Vue example apps, a full reference application, and a minimal starter kit.
 
 ## Repository structure
 
@@ -9,6 +9,8 @@ A monorepo for the OHDSI WebAPI Working Group Symposium 2026. It contains a Type
 ├── packages/
 │   └── webapi-sdk/          # @ohdsi/webapi-sdk — TypeScript SDK + React hooks
 ├── apps/
+│   ├── example-react/       # Example app built with React (port 5173)
+│   ├── example-vue/         # Example app built with Vue 3 (port 5174)
 │   ├── reference-app/       # Full reference implementation (React + Tailwind)
 │   └── starter-kit/         # Minimal starting point for workshop attendees
 └── docker/                  # Docker Compose stack (WebAPI + Atlas + Postgres)
@@ -30,9 +32,12 @@ npm run docker:up
 ```
 
 This starts three containers:
-- `broadsea-atlasdb` — PostgreSQL with the Eunomia demo CDM pre-loaded (port 5432)
-- `webapi-symposium-webapi` — OHDSI WebAPI (port 8080)
-- `webapi-symposium-atlas` — OHDSI Atlas (port 8081)
+
+| Container | Description | Port |
+|---|---|---|
+| `broadsea-atlasdb` | PostgreSQL with Eunomia demo CDM pre-loaded | 5432 |
+| `webapi-symposium-webapi` | OHDSI WebAPI | 8080 |
+| `webapi-symposium-atlas` | OHDSI Atlas | 8081 |
 
 WebAPI takes ~3 minutes to initialize on first run. Check readiness:
 
@@ -55,20 +60,20 @@ npm install
 npm run build:sdk
 ```
 
-### 4. Run an app
+### 4. Run an example app
 
-Reference app (full-featured UI):
+**React** (port 5173):
 
 ```bash
-cp apps/reference-app/.env.example apps/reference-app/.env
-npm run dev:reference        # http://localhost:5173
+cp apps/example-react/.env.example apps/example-react/.env
+npm run dev:example-react
 ```
 
-Starter kit (minimal template):
+**Vue** (port 5174):
 
 ```bash
-cp apps/starter-kit/.env.example apps/starter-kit/.env
-npm run dev:starter          # http://localhost:5173
+cp apps/example-vue/.env.example apps/example-vue/.env
+npm run dev:example-vue
 ```
 
 ## packages/webapi-sdk
@@ -80,11 +85,11 @@ npm run dev:starter          # http://localhost:5173
 ```ts
 import { createWebApiClient } from '@ohdsi/webapi-sdk';
 
-const client = createWebApiClient({ baseUrl: 'http://localhost:8080/WebAPI' });
+const client = createWebApiClient({ baseUrl: 'http://localhost:8080' });
 
 const sources = await client.sources.list();
 const cohorts = await client.cohorts.list();
-const results = await client.vocabulary.search('diabetes', 'EUNOMIA');
+const concepts = await client.vocabulary.searchByText('EUNOMIA', 'diabetes');
 ```
 
 Available namespaces on `WebApiClient`:
@@ -97,14 +102,14 @@ Available namespaces on `WebApiClient`:
 | `client.vocabulary` | Vocabulary & concept search |
 | `client.analyses` | IR, characterization, estimation, prediction, pathways |
 
-### React hooks
+### React hooks (`@ohdsi/webapi-sdk/react`)
 
 ```tsx
 import { WebApiProvider, useSources, useVocabularySearch } from '@ohdsi/webapi-sdk/react';
 
 function App() {
   return (
-    <WebApiProvider config={{ baseUrl: 'http://localhost:8080/WebAPI' }}>
+    <WebApiProvider config={{ baseUrl: 'http://localhost:8080' }}>
       <MyComponent />
     </WebApiProvider>
   );
@@ -118,41 +123,62 @@ function MyComponent() {
 
 Available hooks: `useSources`, `useCohorts`, `useConceptSets`, `useVocabularySearch`.
 
-Each hook returns `{ data, isLoading, error }`.
+Each hook returns `{ data, isLoading, error, refetch }`.
+
+## apps/example-react
+
+React 18 example using `@ohdsi/webapi-sdk/react`. The SDK's `WebApiProvider` sets up the client; pages consume data via hooks.
+
+Pages: Sources, Cohorts, Vocabulary Search.
+
+```
+src/
+├── App.tsx                  # WebApiProvider + React Router
+└── pages/
+    ├── Sources.tsx          # useSources()
+    ├── Cohorts.tsx          # useCohorts()
+    └── VocabularySearch.tsx # useSources() + useVocabularySearch()
+```
+
+## apps/example-vue
+
+Vue 3 example using the plain `@ohdsi/webapi-sdk` client. The client is provided via Vue's `provide`/`inject` API and wrapped in composables that return `ref`-based reactive state.
+
+Pages: Sources, Cohorts, Vocabulary Search.
+
+```
+src/
+├── main.ts                  # createWebApiClient + app.provide()
+├── App.vue                  # Vue Router layout
+├── composables/
+│   ├── useWebApiClient.ts   # inject() the client
+│   ├── useSources.ts
+│   ├── useCohorts.ts
+│   └── useVocabularySearch.ts
+└── pages/
+    ├── Sources.vue
+    ├── Cohorts.vue
+    └── VocabularySearch.vue
+```
 
 ## apps/reference-app
 
-A complete React application demonstrating all SDK features. Pages:
+A complete React application demonstrating all SDK features.
 
-- **Home** — connection status and server info
-- **Sources** — list registered data sources
-- **Cohorts** — browse cohort definitions
-- **Vocabulary Search** — search concepts across a source
-- **Concept Sets** — browse concept set definitions
-
-Environment variable (`apps/reference-app/.env`):
-
-```
-VITE_WEBAPI_BASE_URL=http://localhost:8080/WebAPI
-VITE_APP_TITLE=OHDSI WebAPI Reference App
-```
+Pages: Home, Sources, Cohorts, Vocabulary Search, Concept Sets.
 
 ## apps/starter-kit
 
-A minimal React + Tailwind template pre-wired with `WebApiProvider`, `useSources`, and `useVocabularySearch`. Edit `apps/starter-kit/src/App.tsx` to build your own application.
-
-Environment variable (`apps/starter-kit/.env`):
-
-```
-VITE_WEBAPI_BASE_URL=http://localhost:8080/WebAPI
-```
+A minimal React + Tailwind template pre-wired with `WebApiProvider`, `useSources`, and `useVocabularySearch`. Edit `src/App.tsx` to build your own application.
 
 ## npm scripts
 
 | Script | Description |
 |---|---|
-| `npm run dev:reference` | Start the reference app dev server |
-| `npm run dev:starter` | Start the starter kit dev server |
+| `npm run dev:example-react` | Start the React example app (port 5173) |
+| `npm run dev:example-vue` | Start the Vue example app (port 5174) |
+| `npm run dev:reference` | Start the reference app (port 5173) |
+| `npm run dev:starter` | Start the starter kit (port 5173) |
 | `npm run build:sdk` | Build the SDK |
 | `npm run build` | Build SDK and all apps |
 | `npm run docker:up` | Start the Docker backend stack |
